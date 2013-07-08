@@ -82,7 +82,7 @@ func (g *GoGenerator) Object(name string, schema *JsonSchema) string {
 func (g *GoGenerator) Method(name string, method *JsonMethod) (req, resp, stub string) {
 	req = g.Object(name+"Req", method.Request)
 	resp = g.Object(name+"Resp", method.Response)
-	stub = fmt.Sprintf("%s(*%sReq) (*%sResp, err)",
+	stub = fmt.Sprintf("%s(*%sReq) (*%sResp, error)",
 		name, name, name)
 	return
 }
