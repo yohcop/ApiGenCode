@@ -1,0 +1,43 @@
+{
+  "title": "API sample",
+  "name": "SampleApi",
+
+  "schemas": {
+    "Location": {
+      "type": "object",
+      "properties": {
+        "lat": { "type": "number" },
+        "lon": { "type": "number" }
+      }
+    },
+    "GeoPoint": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "loc": { "$ref": "Location" }
+      }
+    }
+  },
+
+  "methods": {
+    "GetGeoPoints": {
+      "description": "Retrieves the geopoints around the given point.",
+      "request": {
+        "type": "object",
+        "properties": {
+          "loc": { "$ref": "Location" },
+          "radius": { "type": "number", "description": "in meters" }
+        }
+      },
+      "response": {
+        "type": "object",
+        "properties": {
+          "geopoints": {
+            "type": "array",
+            "items": { "$ref": "GeoPoint" }
+          }
+        }
+      }
+    }
+  }
+}
