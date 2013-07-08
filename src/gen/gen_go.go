@@ -1,13 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"log"
+	"os/exec"
 	"strings"
 )
 
 var genGoPkg = flag.String("gen_go_pkg", "main", "Go package")
+var genGoFmt = flag.Bool("gen_go_fmt", true, "Run gofmt on output")
 
 type GoGenerator struct {
 	Package string
@@ -27,11 +30,12 @@ func (g *GoGenerator) GenCode(api *JsonApi) []*GenFile {
 
 	return []*GenFile{
 		&GenFile{
-			Name:    "types.go",
-			Content: g.WrapFile(strings.Join(typesContent, "\n")),
+			Name: "types.go",
+			Content: g.MaybeRunGoFmt(
+				g.WrapFile(strings.Join(typesContent, "\n"))),
 		}, &GenFile{
 			Name:    "interface.go",
-			Content: g.WrapFile(g.Interface(api)),
+			Content: g.MaybeRunGoFmt(g.WrapFile(g.Interface(api))),
 		},
 	}
 }
@@ -99,4 +103,23 @@ func (g *GoGenerator) Interface(api *JsonApi) string {
 
 func (g *GoGenerator) GoName(jsonName string) string {
 	return strings.ToUpper(jsonName[0:1]) + jsonName[1:]
+}
+
+func (g *GoGenerator) MaybeRunGoFmt(in string) string {
+	if *genGoFmt {
+		return g.RunGoFmt(in)
+	}
+	return in
+}
+
+func (g *GoGenerator) RunGoFmt(in string) string {
+	cmd := exec.Command("gofmt")
+	cmd.Stdin = strings.NewReader(in)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		log.Println(err)
+	}
+	return out.String()
 }
