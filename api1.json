@@ -21,6 +21,7 @@
 
   "methods": {
     "GetGeoPoints": {
+      "path": "/getgeopoints",
       "description": "Retrieves the geopoints around the given point.",
       "request": {
         "type": "object",

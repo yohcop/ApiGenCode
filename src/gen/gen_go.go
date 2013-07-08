@@ -33,7 +33,12 @@ func (g *GoGenerator) GenCode(api *JsonApi) []*GenFile {
 			Name: "types.go",
 			Content: g.MaybeRunGoFmt(
 				g.WrapFile(strings.Join(typesContent, "\n"))),
-		}, &GenFile{
+		},
+		&GenFile{
+			Name:    "paths.go",
+			Content: g.MaybeRunGoFmt(g.WrapFile(g.Paths(api))),
+		},
+		&GenFile{
 			Name:    "interface.go",
 			Content: g.MaybeRunGoFmt(g.WrapFile(g.Interface(api))),
 		},
@@ -85,6 +90,16 @@ func (g *GoGenerator) Method(name string, method *JsonMethod) (req, resp, stub s
 	stub = fmt.Sprintf("%s(*%sReq) (*%sResp, error)",
 		name, name, name)
 	return
+}
+
+func (g *GoGenerator) Paths(api *JsonApi) string {
+	paths := make([]string, 0, len(api.Methods))
+	for name, method := range api.Methods {
+		p := `"` + g.GoName(name) + `": "` + method.Path + `",`
+		paths = append(paths, p)
+	}
+	return "var " + g.GoName(api.Name) + "Paths = map[string]string{\n  " +
+		strings.Join(paths, "\n  ") + "\n}"
 }
 
 func (g *GoGenerator) Interface(api *JsonApi) string {

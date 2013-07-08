@@ -20,6 +20,7 @@ type JsonSchema struct {
 }
 
 type JsonMethod struct {
+	Path        string      `json:"path,omitempty"`
 	Description string      `json:"description,omitempty"`
 	Request     *JsonSchema `json:"request,omitempty"`
 	Response    *JsonSchema `json:"response,omitempty"`
