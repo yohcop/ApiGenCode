@@ -11,8 +11,10 @@ import (
 )
 
 var jsonFile = flag.String("schema", "", "Path to json schema")
-var lang = flag.String("lang", "go", "Language to generate code for")
-var outDir = flag.String("out", "", "Output directory")
+var lang = flag.String("lang", "go",
+    `Language to generate code for. ["go", "html"]`)
+var outDir = flag.String("out", "",
+    "Output directory. If emtpy, prints to stdout")
 var showParsed = flag.Bool("show_parsed", false,
 	"Prints what was parsed from the schema file.")
 
@@ -34,10 +36,12 @@ func main() {
 	}
 
 	var gen Generator
-	if *lang == "go" {
+	switch *lang {
+	case "go":
 		gen = NewGoGenerator()
-	}
-	if gen == nil {
+	case "html":
+		gen = NewHtmlFormGenerator()
+	default:
 		log.Panicf("Unknown language: %s", *lang)
 	}
 
