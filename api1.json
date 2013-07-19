@@ -27,7 +27,15 @@
         "type": "object",
         "properties": {
           "loc": { "$ref": "Location" },
-          "radius": { "type": "number", "description": "in meters" }
+          "radius": { "type": "number", "description": "in meters" },
+          "namespace": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "parents": {
+            "type": "array",
+            "items": { "$ref": "GeoPoint" }
+          }
         }
       },
       "response": {

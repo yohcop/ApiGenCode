@@ -1,0 +1,24 @@
+<html>
+  <head>
+    <style>
+      label { display: inline-block; margin-right: 1em; }
+    </style>
+    <script src="form.js"></script>
+    <script>
+      var schemas = {{.Schemas}};
+      var req = {{.Req}};
+      var urlPath = '{{.UrlPath}}';
+      var methodName = '{{.Name}}';
+    </script>
+  </head>
+  <body>
+    <a href="index.html">forms</a>
+    <div id="urlpath">{{.UrlPath}}</div>
+    <h1>{{.Name}}</h1>
+
+    <ul id="form"></ul>
+    <button id="go">Go</button>
+
+    <script>build("", "", req);</script>
+  </body>
+</html>

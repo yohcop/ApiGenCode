@@ -2,45 +2,20 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"flag"
-	"log"
+	"io/ioutil"
+	"path"
 	"strings"
 	"text/template"
 )
 
 var genHtmlFormUrl = flag.String("gen_form_url", "/",
 	"Html form path")
-
-var templates = `<html>
-<head>
-<script>
-function get(field) {
-  if (document.forms[0][field].value) {
-    return document.forms[0][field].value;
-  }
-}
-function getN(field) {
-  if (document.forms[0][field].value) {
-    return Number(document.forms[0][field].value);
-  }
-}
-function f() {
-  var q = {};
-  {{.Js}}
-  return JSON.stringify(q);
-}
-function go() {
-  window.open('{{.UrlPath}}/{{.Name}}?q=' + f());
-}
-</script>
-</head>
-<body>
-<a href="index.html">forms</a>
-<h1>{{.Name}}</h1>
-<form>
-{{.Form}}
-<button onclick="go();return false()">Send</button>
-</form>`
+var genHtmlTplPath = flag.String("gen_form_src", "src/gen",
+	"Path to directory containing html templates")
+var genHtmlOverrideJs = flag.Bool("gen_form_gen_js", true,
+	"Precents overriding js file. Useful for dev.")
 
 type HtmlFormGenerator struct {
 	UrlPath   string
@@ -49,8 +24,9 @@ type HtmlFormGenerator struct {
 
 func NewHtmlFormGenerator() *HtmlFormGenerator {
 	return &HtmlFormGenerator{
-		UrlPath:   *genHtmlFormUrl,
-		Templates: template.Must(template.New("foo").Parse(templates)),
+		UrlPath: *genHtmlFormUrl,
+		Templates: template.Must(template.New("foo").ParseFiles(
+			path.Join(*genHtmlTplPath, "form.html"))),
 	}
 }
 
@@ -62,6 +38,14 @@ func (g *HtmlFormGenerator) GenCode(api *JsonApi) []*GenFile {
 		},
 	}
 
+	if *genHtmlOverrideJs {
+	  js, _ := ioutil.ReadFile(path.Join(*genHtmlTplPath, "form.js"))
+		files = append(files, &GenFile{
+			Name:    "form.js",
+			Content: string(js),
+		})
+	}
+
 	for name, method := range api.Methods {
 		files = append(files, &GenFile{
 			Name:    name + ".html",
@@ -71,56 +55,17 @@ func (g *HtmlFormGenerator) GenCode(api *JsonApi) []*GenFile {
 	return files
 }
 
-func (g *HtmlFormGenerator) GenField(
-	name string, schema *JsonSchema, api *JsonApi) (
-	title, input, js string) {
-
-	switch schema.Type {
-	case "string":
-		return name, `<input name="` + name + `"></input>`,
-			"q." + name + " = get\"" + name + "\");\n"
-	case "number":
-		return name, `<input name="` + name + `"></input>`,
-			"q." + name + " = getN(\"" + name + "\");\n"
-	case "object":
-		form := ""
-		jss := ""
-		for sub, field := range schema.Properties {
-			title, input, js := g.GenField(name+"."+sub, field, api)
-			form += "<li><label>" + title + "</label>" + input + "</li>"
-			jss += js + "\n"
-		}
-		return name, "<ul>" + form + "</ul>", jss
-	}
-
-	if len(schema.Ref) > 0 {
-		s := api.Schemas[schema.Ref]
-		if s != nil {
-			title, input, js := g.GenField(name, s, api)
-			return title, input, "q." + name + " = {};\n" + js
-		}
-		log.Panic("Unknown reference: " + schema.Ref)
-	}
-	log.Panic("Unknown type: " + schema.Type)
-	return
-}
-
 func (g *HtmlFormGenerator) GenMethodForm(
 	name string, method *JsonMethod, api *JsonApi) string {
 
-	form := ""
-	jss := ""
-	for name, field := range method.Request.Properties {
-		title, input, js := g.GenField(name, field, api)
-		form += "<li><label>" + title + "</label>" + input + "</li>\n"
-		jss += js
-	}
+	rs, _ := json.Marshal(method.Request)
+	schemas, _ := json.Marshal(api.Schemas)
 
 	var out bytes.Buffer
-	g.Templates.Execute(&out, struct {
-		Js, Name, Form, UrlPath string
+	g.Templates.ExecuteTemplate(&out, "form.html", struct {
+		Name, UrlPath, Req, Schemas string
 	}{
-		jss, name, form, g.UrlPath,
+		name, g.UrlPath, string(rs), string(schemas),
 	})
 	return out.String()
 }
