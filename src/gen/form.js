@@ -1,13 +1,4 @@
-function get(field) {
-  if (document.forms[0][field].value) {
-    return document.forms[0][field].value;
-  }
-}
-function getN(field) {
-  if (document.forms[0][field].value) {
-    return Number(document.forms[0][field].value);
-  }
-}
+// Set the given value at the given path, in obj.
 function set(path, value, obj) {
   var name = path[0];
 
@@ -38,18 +29,21 @@ function set(path, value, obj) {
     obj[name] = s;
   }
 }
-function go(url, name, getters) {
+// Prepare the request and open the new url in a new window.
+function go(url, path, getters) {
   var q = {};
 
-  for (var name in getters) {
-    var val = getters[name]();
+  for (var field in getters) {
+    var val = getters[field]();
     if (val) {
-      set(name.split('.'), val, q);
+      set(field.split('.'), val, q);
     }
   }
   console.log(JSON.stringify(q));
-  window.open(url + '/' + name + '?q=' + JSON.stringify(q));
+  window.open(url + path + '?q=' + JSON.stringify(q));
 }
+// Build a <li> tag that contains the form fields for the given definition.
+// Sets callback in getters for the defined fields.
 function buildEl(prefix, name, def, getters) {
   var prefixedName = prefix ? prefix + '.' + name : name;
   var el = null;
@@ -114,9 +108,7 @@ function buildEl(prefix, name, def, getters) {
   }
 
   if (el) {
-    if (prefixedName == '') {
-      prefixedName = 'request';
-    }
+    prefixedName = prefixedName || 'request';
     var wrap = document.createElement('li');
     var title = document.createElement('label');
     title.innerHTML = prefixedName;
@@ -126,7 +118,7 @@ function buildEl(prefix, name, def, getters) {
   }
   return null;
 }
-
+// Prepare the form.
 function build(prefix, name, def) {
   var form = document.getElementById('form');
   var getters = {};
@@ -138,7 +130,8 @@ function build(prefix, name, def) {
   form.appendChild(el);
 
   var bt = document.getElementById('go');
+  var p = methodPath || ('/' + methodName);
   bt.onclick = function() {
-    go(urlPath, methodName, getters);
+    go(urlPath, p, getters);
   };
 }

@@ -63,9 +63,9 @@ func (g *HtmlFormGenerator) GenMethodForm(
 
 	var out bytes.Buffer
 	g.Templates.ExecuteTemplate(&out, "form.html", struct {
-		Name, UrlPath, Req, Schemas string
+		Name, UrlPath, MethodPath, Req, Schemas string
 	}{
-		name, g.UrlPath, string(rs), string(schemas),
+		name, g.UrlPath, method.Path, string(rs), string(schemas),
 	})
 	return out.String()
 }
