@@ -16,6 +16,7 @@
         "id": { "type": "string" },
         "loc": { "$ref": "Location" },
         "type": {
+          "type": "string",
           "enum": ["Flowers", "Bike shop", "Restaurant"]
         }
       }

@@ -64,7 +64,12 @@ func (g *GoGenerator) TypeName(schema *JsonSchema) string {
 	case "array":
 		return "[]" + g.TypeName(schema.Items)
 	}
-	return "*" + schema.Ref
+	if schema.Ref != "" {
+		return "*" + schema.Ref
+	} else if len(schema.Enum) != 0 {
+		return "interface{}"
+	}
+	return "/* SHOULD NOT COMPILE */"
 }
 
 func (g *GoGenerator) Object(name string, schema *JsonSchema) string {
@@ -131,9 +136,12 @@ func (g *GoGenerator) RunGoFmt(in string) string {
 	cmd := exec.Command("gofmt")
 	cmd.Stdin = strings.NewReader(in)
 	var out bytes.Buffer
+	var errOut bytes.Buffer
 	cmd.Stdout = &out
+	cmd.Stderr = &errOut
 	err := cmd.Run()
 	if err != nil {
+		log.Println(errOut.String())
 		log.Println(err)
 	}
 	return out.String()
