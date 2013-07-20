@@ -15,8 +15,9 @@ type JsonSchema struct {
 	Properties map[string]*JsonSchema `json:"properties,omitempty"`
 	// If type is 'array'
 	Items *JsonSchema `json:"items,omitempty"`
-	// If type is not present, implies object of type Ref.
-	Ref string `json:"$ref,omitempty"`
+	// If type is not present, implies object of type Ref, or enum values.
+	Ref  string        `json:"$ref,omitempty"`
+	Enum []interface{} `json:"enum,omitempty"`
 }
 
 type JsonMethod struct {

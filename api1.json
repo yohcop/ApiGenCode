@@ -14,7 +14,10 @@
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "loc": { "$ref": "Location" }
+        "loc": { "$ref": "Location" },
+        "type": {
+          "enum": ["Flowers", "Bike shop", "Restaurant"]
+        }
       }
     }
   },
@@ -35,6 +38,12 @@
           "parents": {
             "type": "array",
             "items": { "$ref": "GeoPoint" }
+          },
+          "data": {
+            "enum": [
+              "some string", 123, 45.6, ["foo", 3],
+              {"asd": "fg"}
+            ]
           }
         }
       },

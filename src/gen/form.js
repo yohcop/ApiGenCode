@@ -104,6 +104,22 @@ function buildEl(prefix, name, def, getters) {
         if (d) {
           return buildEl(prefix, name, d, getters);
         }
+      } else if ('enum' in def) {
+        console.log('enum');
+        el = document.createElement('select');
+        for (var i = 0; i < def.enum.length; ++i) {
+          var opt = document.createElement('option');
+          opt.value = i;
+          opt.innerHTML = JSON.stringify(def.enum[i]);
+          el.appendChild(opt);
+        }
+        getters[prefixedName] = (function() { return function() {
+            if (el.value) {
+              return def.enum[el.value];
+            }
+            return null;
+        }})();
+        break;
       }
   }
 
