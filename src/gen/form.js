@@ -47,80 +47,84 @@ function go(url, path, getters) {
 function buildEl(prefix, name, def, getters) {
   var prefixedName = prefix ? prefix + '.' + name : name;
   var el = null;
-  switch(def.type) {
-    case "string":
-      el = document.createElement('input');
-      //el.name = prefixedName;
-      getters[prefixedName] = (function() { return function() {
-          if (el.value) {
-            return el.value;
-          }
-          return null;
-      }})();
-      break;
-    case "number":
-      el = document.createElement('input');
-      //el.name = prefixedName;
-      getters[prefixedName] = (function() { return function() {
-          if (el.value) {
-            return Number(el.value);
-          }
-          return null;
-      }})();
-      break;
-    case "object":
-      el = document.createElement('ul');
-      for (var sub in def.properties) {
-        var child = buildEl(
-            prefixedName, sub, def.properties[sub], getters);
-        if (child) {
-          el.appendChild(child);
-        }
-      }
-      break;
-    case "array":
-      var items = def.items;
-      el = document.createElement('div');
-      var children = document.createElement('ul');
-      el.appendChild(children);
-      var bt = document.createElement('button');
-      bt.innerHTML = 'Add';
-      el.appendChild(bt);
 
-      var count = 0;
-      bt.onclick = (function() {
-        return function() {
-          var child = buildEl(
-            prefixedName + '[]', '[' + count + ']', items, getters);
-          children.appendChild(child);
-          count++;
-          return false;
-        }
-      })();
-      break;
-    default:
-      if (def.$ref) {
-        var d = schemas[def.$ref];
-        if (d) {
-          return buildEl(prefix, name, d, getters);
-        }
-      } else if ('enum' in def) {
-        console.log('enum');
-        el = document.createElement('select');
-        for (var i = 0; i < def.enum.length; ++i) {
-          var opt = document.createElement('option');
-          opt.value = i;
-          opt.innerHTML = JSON.stringify(def.enum[i]);
-          el.appendChild(opt);
-        }
+  if (!('enum' in def)) {
+    switch(def.type) {
+      case "string":
+        el = document.createElement('input');
+        //el.name = prefixedName;
         getters[prefixedName] = (function() { return function() {
             if (el.value) {
-              return def.enum[el.value];
+              return el.value;
             }
             return null;
         }})();
         break;
-      }
+      case "number":
+        el = document.createElement('input');
+        //el.name = prefixedName;
+        getters[prefixedName] = (function() { return function() {
+            if (el.value) {
+              return Number(el.value);
+            }
+            return null;
+        }})();
+        break;
+      case "object":
+        el = document.createElement('ul');
+        for (var sub in def.properties) {
+          var child = buildEl(
+              prefixedName, sub, def.properties[sub], getters);
+          if (child) {
+            el.appendChild(child);
+          }
+        }
+        break;
+      case "array":
+        var items = def.items;
+        el = document.createElement('div');
+        var children = document.createElement('ul');
+        el.appendChild(children);
+        var bt = document.createElement('button');
+        bt.innerHTML = 'Add';
+        el.appendChild(bt);
+
+        var count = 0;
+        bt.onclick = (function() {
+          return function() {
+            var child = buildEl(
+              prefixedName + '[]', '[' + count + ']', items, getters);
+            children.appendChild(child);
+            count++;
+            return false;
+          }
+        })();
+        break;
+      default:
+        if (def.$ref) {
+          var d = schemas[def.$ref];
+          if (d) {
+            return buildEl(prefix, name, d, getters);
+          }
+        }
+    }
+  } else {
+    // Enums are handled separately since they also may have
+    // a 'type' attribute, but we just ignore it and take the
+    // values in the enum array.
+    el = document.createElement('select');
+    for (var i = 0; i < def.enum.length; ++i) {
+      var opt = document.createElement('option');
+      opt.value = i;
+      opt.innerHTML = JSON.stringify(def.enum[i]);
+      el.appendChild(opt);
+    }
+    getters[prefixedName] = (function() { return function() {
+        if (el.value) {
+          return def.enum[el.value];
+        }
+        return null;
+    }})();
   }
 
   if (el) {

@@ -45,6 +45,13 @@
               "some string", 123, 45.6, ["foo", 3],
               {"asd": "fg"}
             ]
+          },
+          "flags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [ "user_contributed", "reference" ]
+            }
           }
         }
       },
