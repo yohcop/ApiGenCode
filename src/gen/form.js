@@ -60,6 +60,16 @@ function buildEl(prefix, name, def, getters) {
             return null;
         }})();
         break;
+      case "integer":
+        el = document.createElement('input');
+        //el.name = prefixedName;
+        getters[prefixedName] = (function() { return function() {
+            if (el.value) {
+              return Math.floor(Number(el.value));
+            }
+            return null;
+        }})();
+        break;
       case "number":
         el = document.createElement('input');
         //el.name = prefixedName;

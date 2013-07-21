@@ -52,6 +52,7 @@
             "type": "array",
             "items": { "$ref": "GeoPoint" }
           },
+          "visits": { "type": "integer" },
           "data": {
             "enum": [
               "some string", 123, 45.6, ["foo", 3],
