@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
+	"reflect"
 	"strings"
 )
 
@@ -49,6 +50,32 @@ func (g *GoGenerator) WrapFile(content string) string {
 	return fmt.Sprintf("package %s\n\n%s", g.Package, content)
 }
 
+func (g *GoGenerator) EnumType(schema *JsonSchema) string {
+	var common reflect.Kind = reflect.Invalid
+	fmt.Println("Enum")
+	for _, obj := range schema.Enum {
+		t := reflect.TypeOf(obj).Kind()
+		fmt.Printf("  Kind: %s\n", t.String())
+		if common == reflect.Invalid {
+			common = t
+			continue
+		}
+		if t != common {
+			fmt.Println("  --> Different, using interface{}")
+			return "interface{}"
+		}
+	}
+	switch common {
+	case reflect.Bool:
+		return "bool"
+	case reflect.Float64:
+		return "float64"
+	case reflect.String:
+		return "string"
+	}
+	return "interface{}"
+}
+
 func (g *GoGenerator) TypeName(schema *JsonSchema) string {
 	switch schema.Type {
 	case "number":
@@ -67,7 +94,7 @@ func (g *GoGenerator) TypeName(schema *JsonSchema) string {
 	if schema.Ref != "" {
 		return "*" + schema.Ref
 	} else if len(schema.Enum) != 0 {
-		return "interface{}"
+		return g.EnumType(schema)
 	}
 	return "/* SHOULD NOT COMPILE */"
 }
@@ -81,9 +108,8 @@ func (g *GoGenerator) Object(name string, schema *JsonSchema) string {
 				fmt.Sprintf("%s %s `json:\"%s,omitempty\"`",
 					g.GoName(fieldName), t, fieldName))
 		}
-		return fmt.Sprintf("type %s struct {\n"+
-			"  "+strings.Join(content, "\n  ")+
-			"\n}", name)
+		return fmt.Sprintf("type %s struct {\n  %s\n}",
+			name, strings.Join(content, "\n  "))
 	}
 	log.Panicf("Can't generate an object of type %s", schema.Type)
 	return ""

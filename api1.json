@@ -16,8 +16,20 @@
         "id": { "type": "string" },
         "loc": { "$ref": "Location" },
         "type": {
-          "type": "string",
           "enum": ["Flowers", "Bike shop", "Restaurant"]
+        },
+        "typeid": {
+          "type": "integer",
+          "enum": [1, 2, 5]
+        },
+        "floatTypeId": {
+          "type": "array",
+          "items": {
+            "enum": [1.2, 2, 5]
+          }
+        },
+        "maybe": {
+          "enum": [true, false]
         }
       }
     }
@@ -49,7 +61,6 @@
           "flags": {
             "type": "array",
             "items": {
-              "type": "string",
               "enum": [ "user_contributed", "reference" ]
             }
           }
