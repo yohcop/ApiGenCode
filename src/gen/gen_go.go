@@ -52,16 +52,13 @@ func (g *GoGenerator) WrapFile(content string) string {
 
 func (g *GoGenerator) EnumType(schema *JsonSchema) string {
 	var common reflect.Kind = reflect.Invalid
-	fmt.Println("Enum")
 	for _, obj := range schema.Enum {
 		t := reflect.TypeOf(obj).Kind()
-		fmt.Printf("  Kind: %s\n", t.String())
 		if common == reflect.Invalid {
 			common = t
 			continue
 		}
 		if t != common {
-			fmt.Println("  --> Different, using interface{}")
 			return "interface{}"
 		}
 	}
