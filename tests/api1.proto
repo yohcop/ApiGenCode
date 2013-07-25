@@ -1,0 +1,45 @@
+package foo;
+
+import "pbform/extensions.proto";
+
+message Sub {
+  optional string sub_field = 1;
+  repeated string sub_repeated = 2;
+}
+
+message FooReq {
+  optional string string_field = 1;
+  optional int32 int_field = 2;
+  optional float float_field = 3;
+  optional bool bool_field = 4;
+  optional bytes bytes_field = 5;
+
+  repeated string repeated_string_field = 6;
+  repeated int32 repeated_int_field = 7;
+  repeated float repeated_float_field = 8;
+  repeated bool repeated_bool_field = 9;
+  repeated bytes repeated_bytes_field = 10;
+
+  required string req_string_field = 11;
+  required int32 req_int_field = 12;
+  required float req_float_field = 13;
+  required bool req_bool_field = 14;
+  required bytes req_bytes_field = 15;
+
+  required Sub req_sub_message = 16;
+  optional Sub opt_sub_message = 17;
+  repeated Sub rep_sub_message = 18;
+}
+
+message FooResp {
+  optional string field1 = 1;
+}
+
+option (pbform.File).url = "/foo";
+
+service FooService {
+  rpc Echo (FooReq) returns (FooResp) {
+    option (pbform.Method).path = "/echoservice";
+  }
+  rpc Invert (Sub) returns (FooResp);
+}

@@ -1,0 +1,19 @@
+package pbform;
+
+import "google/protobuf/descriptor.proto";
+
+message FileOptions {
+  optional string url = 1;
+}
+
+message MethodOptions {
+  optional string path = 1;
+}
+
+extend google.protobuf.FileOptions {
+  optional FileOptions File = 5001;
+}
+
+extend google.protobuf.MethodOptions {
+  optional MethodOptions Method = 5001;
+}
