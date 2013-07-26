@@ -35,9 +35,9 @@ message FooResp {
   optional string field1 = 1;
 }
 
-option (pbform.File).url = "/foo";
-
 service FooService {
+  option (pbform.Service).url = "http://example.com";
+
   rpc Echo (FooReq) returns (FooResp) {
     option (pbform.Method).path = "/echoservice";
   }

@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"strings"
 	"text/template"
 
 	"code.google.com/p/goprotobuf/proto"
@@ -63,16 +64,39 @@ func genForm(request *protocompiler.CodeGeneratorRequest) *protocompiler.CodeGen
 			fmt.Sprintf("%s.js", *desc.Name))
 		c, _ := json.Marshal(desc)
 
-    url := "";
-		if desc.GetOptions() != nil {
-			i, err := proto.GetExtension(desc.GetOptions(), pbform.E_File)
-			if err == nil && i != nil {
-        i2 := i.(*pbform.FileOptions)
-				url = *i2.Url
+		methodPaths := make([]string, 0)
+		for _, service := range desc.Service {
+			url := ""
+			if service.GetOptions() != nil {
+				i, err := proto.GetExtension(
+					service.GetOptions(), pbform.E_Service)
+				if err == nil && i != nil {
+					opts := i.(*pbform.ServiceOptions)
+					if opts.Url != nil {
+						url = *opts.Url
+					}
+				}
+			}
+
+			for _, method := range service.Method {
+				if method.GetOptions() != nil {
+					i, err := proto.GetExtension(
+						method.GetOptions(), pbform.E_Method)
+					if err == nil && i != nil {
+						opts := i.(*pbform.MethodOptions)
+						if opts.Path != nil {
+							p := fmt.Sprintf(`setServiceUrl(".%s.%s.%s", "%s%s");`,
+								desc.GetPackage(), service.GetName(),
+								method.GetName(), url, opts.GetPath())
+							methodPaths = append(methodPaths, p)
+						}
+					}
+				}
 			}
 		}
 
-		content := fmt.Sprintf(`setup("%s", %s)`, url, string(c))
+		content := fmt.Sprintf("setup(%s);\n%s", string(c),
+			strings.Join(methodPaths, "\n"))
 		file.Content = proto.String(content)
 		response.File = append(response.File, file)
 	}

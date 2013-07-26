@@ -195,8 +195,8 @@ function buildFormForMessage(message, path) {
   return {el:el, getter:getter};
 }
 
-function setupForMethod(method) {
-  var m = methods[method];
+function setupForMethod(methodName) {
+  var m = methods[methodName];
   if (!m) {
     return;
   }
@@ -217,14 +217,13 @@ function setupForMethod(method) {
   go.onclick = function() {
     var obj = req.getter();
     jsonOutput.innerHTML = JSON.stringify(obj, "", "  ");
-    var url = method.url + method.path +
-      '?q=' + JSON.stringify(obj);
+    var url = m.url + '?q=' + JSON.stringify(obj);
     reqframeurl.innerHTML = url;
     reqframe.src = url;
   };
 }
 
-function setup(url, descriptor) {
+function setup(descriptor) {
   console.log(descriptor);
   var pkg = descriptor.package;
 
@@ -246,11 +245,14 @@ function setup(url, descriptor) {
     var n = s.name;
     for (var j in s.method) {
       var m = s.method[j];
-      m.url = url;
       methods['.' + pkg + '.' + n + '.' + m.name] = m;
     }
   }
 
   updateMethods();
   selectmethod();
+}
+
+function setServiceUrl(service, url) {
+  methods[service].url = url;
 }
