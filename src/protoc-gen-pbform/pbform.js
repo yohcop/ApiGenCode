@@ -114,7 +114,7 @@ function buildFormForOptField(field, path) {
 
   var opt = document.createElement('input');
   opt.type='checkbox';
-  req.el.appendChild(opt);
+  req.el.insertBefore(opt, req.el.firstChild);
 
   var getter = (function() { return function() {
     var v = req.getter();
@@ -224,7 +224,6 @@ function setupForMethod(methodName) {
 }
 
 function setup(descriptor) {
-  console.log(descriptor);
   var pkg = descriptor.package;
 
   // Messages
