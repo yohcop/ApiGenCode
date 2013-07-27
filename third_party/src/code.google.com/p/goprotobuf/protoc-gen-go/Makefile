@@ -29,7 +29,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-include $(GOROOT)/src/Make.cmd
+include $(GOROOT)/src/Make.dist
 
 test:
 	cd testdata && make test

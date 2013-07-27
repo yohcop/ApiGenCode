@@ -932,7 +932,7 @@ func (g *Generator) generateImports() {
 		if fd.PackageName() == g.packageName {
 			continue
 		}
-		filename := goFileName(s)
+		filename := goFileDir(s)
 		if substitution, ok := g.ImportMap[s]; ok {
 			filename = substitution
 		}
@@ -1624,6 +1624,10 @@ func goFileName(name string) string {
 		name = name[0 : len(name)-len(ext)]
 	}
 	return name + ".pb.go"
+}
+
+func goFileDir(name string) string {
+  return path.Dir(name)
 }
 
 // Is this field optional?
