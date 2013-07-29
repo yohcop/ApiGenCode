@@ -204,7 +204,7 @@ function setupForMethod(methodName) {
   var form = document.getElementById('form');
   var go = document.getElementById('go');
   var jsonOutput = document.getElementById('jsonreq');
-  var reqFrameurl = document.getElementById('reqframeurl');
+  var reqFrameUrl = document.getElementById('reqframeurl');
   var reqFrame = document.getElementById('reqframe');
 
   while (form.hasChildNodes()) {
@@ -218,8 +218,8 @@ function setupForMethod(methodName) {
     var obj = req.getter();
     jsonOutput.innerHTML = JSON.stringify(obj, "", "  ");
     var url = m.url + '?q=' + JSON.stringify(obj);
-    reqframeurl.innerHTML = url;
-    reqframe.src = url;
+    reqFrameUrl.innerHTML = url;
+    reqFrame.src = url;
   };
 }
 
