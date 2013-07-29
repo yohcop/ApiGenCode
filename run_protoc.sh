@@ -5,5 +5,5 @@ protoc \
     -Itests/ \
     -Isrc/ \
     --plugin=protoc-gen-pbform=bin/protoc-gen-pbform \
-    --pbform_out=/tmp/foo \
+    --pbform_out=tpl_path=src/protoc-gen-pbform,override_js=false:/tmp/foo \
     $*

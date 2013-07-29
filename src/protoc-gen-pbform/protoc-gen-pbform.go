@@ -19,11 +19,13 @@ import (
 	"pbform"
 )
 
-var genHtmlTplPath = flag.String("gen_form_src",
-	"src/protoc-gen-pbform",
-	"Path to directory containing html templates")
-var genHtmlOverrideJs = flag.Bool("gen_form_gen_js", false,
-	"Prevents overriding js file. Useful for dev, after linking the work file in place of the generated file.")
+// Those options are read from the CodeGeneratorRequest.
+// They can be bassed with the _out flag to protoc, e.g.:
+//   --pbform_out=tpl_path=path/to/tpls,override_js=true:out/directory
+var opts = map[string]string{
+	"tpl_path":    "src/protoc-gen-pbform",
+	"override_js": "false",
+}
 
 func main() {
 	flag.Parse()
@@ -36,6 +38,15 @@ func main() {
 	request := new(protocompiler.CodeGeneratorRequest)
 	if err := proto.Unmarshal(data, request); err != nil {
 		log.Panic(err, "parsing input proto")
+	}
+
+	// Get options.
+	optStr := strings.Split(request.GetParameter(), ",")
+	for _, opt := range optStr {
+		vals := strings.SplitN(opt, "=", 2)
+		if len(vals) == 2 {
+			opts[vals[0]] = vals[1]
+		}
 	}
 
 	// Process request and generate response.
@@ -108,11 +119,11 @@ func genForm(request *protocompiler.CodeGeneratorRequest) *protocompiler.CodeGen
 	response.File = append(response.File, index)
 
 	// form.js file has the javascript to interpret all that.
-	if *genHtmlOverrideJs {
+	if opts["override_js"] == "true" {
 		js := new(protocompiler.CodeGeneratorResponse_File)
 		js.Name = proto.String("pbform.js")
 		jsFile, _ := ioutil.ReadFile(
-			path.Join(*genHtmlTplPath, "pbform.js"))
+			path.Join(opts["tpl_path"], "pbform.js"))
 		js.Content = proto.String(string(jsFile))
 		response.File = append(response.File, js)
 	}
@@ -122,7 +133,7 @@ func genForm(request *protocompiler.CodeGeneratorRequest) *protocompiler.CodeGen
 
 func indexPage(files []*protobuf.FileDescriptorProto) string {
 	tpl := template.Must(template.New("foo").ParseFiles(
-		path.Join(*genHtmlTplPath, "index.html")))
+		path.Join(opts["tpl_path"], "index.html")))
 
 	var out bytes.Buffer
 	tpl.ExecuteTemplate(&out, "index.html", struct {
