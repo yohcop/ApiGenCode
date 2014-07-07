@@ -30,7 +30,7 @@ func NewHtmlFormGenerator() *HtmlFormGenerator {
 	}
 }
 
-func (g *HtmlFormGenerator) GenCode(api *JsonApi) []*GenFile {
+func (g *HtmlFormGenerator) GenCode(api *JsonSchema) []*GenFile {
 	files := []*GenFile{
 		&GenFile{
 			Name:    "index.html",
@@ -39,48 +39,53 @@ func (g *HtmlFormGenerator) GenCode(api *JsonApi) []*GenFile {
 	}
 
 	if *genHtmlOverrideJs {
-	  js, _ := ioutil.ReadFile(path.Join(*genHtmlTplPath, "form.js"))
+		js, _ := ioutil.ReadFile(path.Join(*genHtmlTplPath, "form.js"))
 		files = append(files, &GenFile{
 			Name:    "form.js",
 			Content: string(js),
 		})
 	}
 
-	for name, method := range api.Methods {
-		files = append(files, &GenFile{
-			Name:    name + ".html",
-			Content: g.GenMethodForm(name, method, api),
-		})
+	for name, def := range api.Definitions {
+		for _, link := range def.Links {
+			files = append(files, &GenFile{
+				Name:    name + ".html",
+				Content: g.GenLinkForm(name, link, api),
+			})
+		}
+
 	}
 	return files
 }
 
-func (g *HtmlFormGenerator) GenMethodForm(
-	name string, method *JsonMethod, api *JsonApi) string {
+func (g *HtmlFormGenerator) GenLinkForm(
+	name string, method *JsonLink, api *JsonSchema) string {
 
-	rs, _ := json.Marshal(method.Request)
-	schemas, _ := json.Marshal(api.Schemas)
+	rs, _ := json.Marshal(method.Schema)
+	schemas, _ := json.Marshal(api.Definitions)
 
 	var out bytes.Buffer
 	g.Templates.ExecuteTemplate(&out, "form.html", struct {
 		Name, UrlPath, MethodPath, Req, Schemas string
 	}{
-		name, g.UrlPath, method.Path, string(rs), string(schemas),
+		name, g.UrlPath, method.Href, string(rs), string(schemas),
 	})
 	return out.String()
 }
 
 func (g *HtmlFormGenerator) GenMethodLink(
-	name string, method *JsonMethod) string {
+	name string, method *JsonLink) string {
 
 	return "<li><a href=\"" + name + ".html\">" + name + "</a></li>"
 }
 
-func (g *HtmlFormGenerator) GenIndex(api *JsonApi) string {
-	functions := make([]string, 0, len(api.Methods))
-	for name, method := range api.Methods {
-		f := g.GenMethodLink(name, method)
-		functions = append(functions, f)
+func (g *HtmlFormGenerator) GenIndex(api *JsonSchema) string {
+	functions := make([]string, 0)
+	for name, def := range api.Definitions {
+		for _, link := range def.Links {
+		  f := g.GenMethodLink(name, link)
+		  functions = append(functions, f)
+    }
 	}
 	return "<ul>" + strings.Join(functions, "\n  ") + "</ul>"
 }

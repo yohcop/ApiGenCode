@@ -7,6 +7,7 @@ import (
 	"log"
 	"os/exec"
 	"reflect"
+	"regexp"
 	"strings"
 )
 
@@ -23,17 +24,11 @@ func NewGoGenerator() *GoGenerator {
 	}
 }
 
-func (g *GoGenerator) GenCode(api *JsonApi) []*GenFile {
-	typesContent := make([]string, 0, len(api.Schemas))
-	for name, schema := range api.Schemas {
-		typesContent = append(typesContent, g.Object(name, schema))
-	}
-
+func (g *GoGenerator) GenCode(api *JsonSchema) []*GenFile {
 	return []*GenFile{
 		&GenFile{
-			Name: "types.go",
-			Content: g.MaybeRunGoFmt(
-				g.WrapFile(strings.Join(typesContent, "\n"))),
+			Name:    "types.go",
+			Content: g.MaybeRunGoFmt(g.WrapFile(g.Objects("", api))),
 		},
 		&GenFile{
 			Name:    "paths.go",
@@ -73,7 +68,7 @@ func (g *GoGenerator) EnumType(schema *JsonSchema) string {
 	return "interface{}"
 }
 
-func (g *GoGenerator) TypeName(schema *JsonSchema) string {
+func (g *GoGenerator) TypeName(prefix string, schema *JsonSchema) string {
 	switch schema.Type {
 	case "number":
 		return "float32"
@@ -84,67 +79,182 @@ func (g *GoGenerator) TypeName(schema *JsonSchema) string {
 	case "boolean":
 		return "bool"
 	case "object":
-		return "*" + schema.Ref
+		return "*" + prefix + schema.Ref
 	case "array":
-		return "[]" + g.TypeName(schema.Items)
+    if schema.Items.Ref != "" {
+		  return g.GoName(prefix+schema.Items.Ref)
+    }
+		return "[]" + g.TypeName(prefix, schema.Items)
 	}
 	if schema.Ref != "" {
-		return "*" + schema.Ref
-	} else if len(schema.Enum) != 0 {
+		return "*" + g.GoName(prefix+schema.Ref)
+	}
+	if len(schema.Enum) != 0 {
 		return g.EnumType(schema)
 	}
 	return "/* SHOULD NOT COMPILE */"
 }
 
-func (g *GoGenerator) Object(name string, schema *JsonSchema) string {
-	if schema.Type == "object" {
-		content := make([]string, 0, len(schema.Properties))
-		for fieldName, field := range schema.Properties {
-			t := g.TypeName(field)
+// =======================================================
+
+type structGenerator struct {
+	g *GoGenerator
+}
+
+func (i *structGenerator) schema(prefixes []string, in *JsonSchema, parent *JsonLink) *line {
+	// Try to find a good name.
+	name := in.Title
+	if name == "" && parent != nil && parent.Title != "" {
+		name = parent.Title
+	}
+	if name == "" && len(prefixes) > 0 {
+		name = prefixes[len(prefixes)-1]
+	}
+	if name == "" {
+		name = "root"
+	}
+
+	if in.Type == "object" {
+		content := make([]string, 0, len(in.Properties))
+		for fieldName, field := range in.Properties {
+			t := i.g.TypeName("", field)
 			content = append(content,
 				fmt.Sprintf("%s %s `json:\"%s,omitempty\"`",
-					g.GoName(fieldName), t, fieldName))
+					i.g.GoName(fieldName), t, fieldName))
 		}
-		return fmt.Sprintf("type %s struct {\n  %s\n}",
-			name, strings.Join(content, "\n  "))
+		l := fmt.Sprintf("type %s struct {\n  %s\n}",
+			i.g.GoName(name), strings.Join(content, "\n  "))
+		return &line{l, l}
+	} else if in.Type == "array" {
+		l := fmt.Sprintf("type %s []%s\n",
+			i.g.GoName(name), i.g.TypeName("", in.Items))
+		return &line{l, l}
 	}
-	log.Panicf("Can't generate an object of type %s", schema.Type)
-	return ""
+	return nil
 }
 
-func (g *GoGenerator) Method(name string, method *JsonMethod) (req, resp, stub string) {
-	req = g.Object(name+"Req", method.Request)
-	resp = g.Object(name+"Resp", method.Response)
-	stub = fmt.Sprintf("%s(*%sReq) (*%sResp, error)",
-		name, name, name)
-	return
+func (i *structGenerator) link(prefixes []string, link *JsonLink, parent *JsonSchema) *line {
+	return nil
 }
 
-func (g *GoGenerator) Paths(api *JsonApi) string {
-	paths := make([]string, 0, len(api.Methods))
-	for name, method := range api.Methods {
-		p := `"` + g.GoName(name) + `": "` + method.Path + `",`
-		paths = append(paths, p)
-	}
-	return "var " + g.GoName(api.Name) + "Paths = map[string]string{\n  " +
-		strings.Join(paths, "\n  ") + "\n}"
+func (g *GoGenerator) Objects(prefix string, schema *JsonSchema) string {
+	gen := &structGenerator{g}
+	return GenLines(schema, gen)
 }
 
-func (g *GoGenerator) Interface(api *JsonApi) string {
-	types := make([]string, 0, len(api.Methods))
-	functions := make([]string, 0, len(api.Methods))
-	for name, method := range api.Methods {
-		req, resp, f := g.Method(g.GoName(name), method)
-		types = append(types, req+"\n"+resp)
-		functions = append(functions, f)
+// =======================================================
+
+type interfaceGenerator struct {
+	g *GoGenerator
+}
+
+func (i *interfaceGenerator) schema(prefixes []string, in *JsonSchema, parent *JsonLink) *line {
+	return nil
+}
+
+func (i *interfaceGenerator) link(prefixes []string, link *JsonLink, parent *JsonSchema) *line {
+	f := i.Method(link, parent)
+	return &line{f, f}
+}
+
+func (i *interfaceGenerator) Placeholders(method *JsonLink, parent *JsonSchema) [][]string {
+	params := make([][]string, 0)
+	re := regexp.MustCompile("\\{([^}]+)\\}")
+	placeholders := re.FindAllStringSubmatch(method.Href, -1)
+	for _, match := range placeholders {
+		name := match[1]
+		fmt.Println(name)
+		if schema, known := parent.Properties[name]; known {
+			params = append(params, []string{name, i.g.TypeName("", schema)})
+		} else {
+			fmt.Println("Unknwon " + name)
+		}
 	}
-	return strings.Join(types, "\n") +
-		"\ntype " + g.GoName(api.Name) + " interface {\n" +
-		"  " + strings.Join(functions, "\n  ") +
+	return params
+}
+
+func (i *interfaceGenerator) Method(method *JsonLink, parent *JsonSchema) string {
+	var req, resp string
+	if method.Schema != nil {
+		req = i.g.TypeName(i.g.GoName(method.Title), method.Schema)
+	}
+	if method.TargetSchema != nil {
+		resp = i.g.TypeName("", method.TargetSchema)
+	}
+	params := make([]string, 0)
+	for _, extraParam := range i.Placeholders(method, parent) {
+		params = append(params, extraParam[0]+" "+extraParam[1])
+	}
+	if len(req) > 0 {
+		params = append(params, "input "+req)
+	}
+	name := i.g.GoName(method.Title)
+	return fmt.Sprintf("%s(%s) (%s, error)", name, strings.Join(params, ","), resp)
+}
+
+func (g *GoGenerator) Interface(api *JsonSchema) string {
+	gen := &interfaceGenerator{g}
+
+	return "type " + g.GoName(api.Title) + " interface {\n" +
+		"  " + GenLines(api, gen) +
 		"\n}"
 }
 
+// =======================================================
+
+type pathsGenerator struct {
+	g *GoGenerator
+}
+
+func (i *pathsGenerator) schema(prefixes []string, in *JsonSchema, parent *JsonLink) *line {
+	return nil
+}
+
+func (i *pathsGenerator) link(prefixes []string, link *JsonLink, parent *JsonSchema) *line {
+	method := "GET"
+	if link.Method != "" {
+		method = link.Method
+	}
+	f := fmt.Sprintf(`{
+      "%s", "%s", "%s",
+    },`, i.g.GoName(link.Title), method, link.Href)
+	return &line{f, f}
+}
+
+func (g *GoGenerator) Paths(api *JsonSchema) string {
+	gen := &pathsGenerator{g}
+
+	strukt := `type pathDef struct {
+    Name string
+    Method string
+    Href string
+  }
+  `
+
+	return strukt + "var " + g.GoName(api.Title) + "Paths = []pathDef{" + GenLines(api, gen) + "\n}\n"
+}
+
+// =======================================================
+
+func camelcase(in string, splits []string) string {
+	for _, split := range splits {
+		if strings.Contains(in, split) {
+			path := strings.Split(in, split)
+			for i, p := range path {
+				path[i] = strings.ToUpper(p[0:1]) + p[1:]
+			}
+			in = strings.Join(path, "")
+		}
+	}
+	return in
+}
+
 func (g *GoGenerator) GoName(jsonName string) string {
+	if strings.Contains(jsonName, "/") {
+		path := strings.Split(jsonName, "/")
+		jsonName = path[len(path)-1]
+	}
+	jsonName = camelcase(jsonName, []string{" ", "_"})
 	return strings.ToUpper(jsonName[0:1]) + jsonName[1:]
 }
 
@@ -164,8 +274,12 @@ func (g *GoGenerator) RunGoFmt(in string) string {
 	cmd.Stderr = &errOut
 	err := cmd.Run()
 	if err != nil {
+		log.Println("=== gofmt returned an error. input was: ===")
+		log.Println(in)
+		log.Println("=== gofmt output: ===")
 		log.Println(errOut.String())
 		log.Println(err)
+		log.Println("=== end gofmt error ===")
 	}
 	return out.String()
 }

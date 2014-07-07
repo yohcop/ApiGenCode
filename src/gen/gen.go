@@ -24,7 +24,7 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
-	jsonApi := new(JsonApi)
+	jsonApi := new(JsonSchema)
 	err = json.Unmarshal(api, jsonApi)
 	if err != nil {
 		log.Panic(err)

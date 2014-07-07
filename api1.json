@@ -1,8 +1,40 @@
 {
   "title": "API sample",
-  "name": "SampleApi",
 
-  "schemas": {
+  "properties": {
+    "locations": { "$ref": "#/definitions/locations" }
+  },
+  "definitions": {
+    "country": {
+      "type": "object",
+      "properties": {
+        "locs": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Locations" }
+        }
+      }
+    },
+    "locations": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/Location" },
+      "links": [
+        {
+          "title": "Locations list",
+          "rel": "self",
+          "href": "/locations",
+          "targetSchema": { "$ref": "#/definitions/locations" }
+        },
+        {
+          "title": "New location",
+          "rel": "new",
+          "method": "POST",
+          "encType": "application/x-www-form-urlencoded",
+          "href": "/locations",
+          "schema": { "$ref": "#/definitions/Location" },
+          "targetSchema": { "$ref": "#/definitions/Location" }
+        }
+      ]
+    },
     "Location": {
       "type": "object",
       "properties": {

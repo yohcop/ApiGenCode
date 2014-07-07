@@ -6,5 +6,5 @@ type GenFile struct {
 }
 
 type Generator interface {
-	GenCode(api *JsonApi) []*GenFile
+	GenCode(api *JsonSchema) []*GenFile
 }
