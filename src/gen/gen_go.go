@@ -14,7 +14,7 @@ import (
 
 var genGoPkg = flag.String("gen_go_pkg", "main", "Go package")
 var genGoFmt = flag.Bool("gen_go_fmt", true, "Run gofmt on output")
-var genGoDbg = flag.Bool("gen_go_add_dbg", false, "Add debug to output code")
+var genGoDbg = flag.Bool("gen_go_dbg", false, "Add debug to output code")
 
 type GoGenerator struct {
 	Package string
@@ -142,8 +142,19 @@ type structGenerator struct {
 }
 
 func (i *structGenerator) schema(path string, in *JsonSchema, parent *JsonLink) *line {
-	// Try to find a good name.
 	name := path
+	// Note: we only do this for the input. it is unlikely that a
+	// custom output would be definede here (i.e., not with $ref)
+	// but it is still possible. May be worth doing the same with
+	// targetSchema.
+	if parent != nil && strings.HasSuffix(path, "/schema") {
+		if parent.Schema.Ref != "" {
+			name = i.g.TypeName(path, parent.Schema)
+		} else {
+			name = i.g.GoName(parent.Title) + "Input"
+		}
+	}
+
 	doc := genSchemaDoc(in, path)
 
 	if in.Type == "object" {

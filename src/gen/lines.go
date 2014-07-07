@@ -40,10 +40,10 @@ func genAllLines(path string, in *JsonSchema, g lineGenerator) []*line {
 		lines = append(lines, f)
 
 		if link.Schema != nil {
-			lines = append(lines, g.schema(p, link.Schema, link))
+			lines = append(lines, g.schema(p+"/schema", link.Schema, link))
 		}
 		if link.TargetSchema != nil {
-			lines = append(lines, g.schema(p, link.TargetSchema, link))
+			lines = append(lines, g.schema(p+"/targetSchema", link.TargetSchema, link))
 		}
 	}
 	return lines
