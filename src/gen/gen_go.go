@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -129,12 +130,54 @@ func (i *structGenerator) schema(prefixes []string, in *JsonSchema, parent *Json
 		l := fmt.Sprintf("type %s []%s\n",
 			i.g.GoName(name), i.g.TypeName("", in.Items))
 		return &line{l, l}
+	} else if len(in.Enum) > 0 {
+		l := i.g.GoName(name)
+		enumType := i.g.EnumType(in)
+		values := make([]string, 0, len(in.Enum))
+		for n, v := range in.Enum {
+			key := i.enumVar(n, v)
+			val := i.formatEnumValue(enumType, v)
+			values = append(values,
+				fmt.Sprintf("%s_%s %s = %s", l, key, l, val))
+		}
+		return &line{l, fmt.Sprintf(`
+        type %s %s
+        const (
+          %s
+        )`, l, enumType, strings.Join(values, "\n"))}
 	}
 	return nil
 }
 
 func (i *structGenerator) link(prefixes []string, link *JsonLink, parent *JsonSchema) *line {
 	return nil
+}
+
+func (i *structGenerator) enumVar(n int, val interface{}) string {
+	switch v := val.(type) {
+	case nil:
+		return "_nil_"
+	case int:
+		return fmt.Sprintf("%d", v)
+	case string:
+		return i.g.GoName(v)
+	case bool:
+		return fmt.Sprintf("%t", v)
+	}
+	return fmt.Sprintf("_%d_", n)
+}
+
+func (i *structGenerator) formatEnumValue(tpe string, val interface{}) string {
+	switch {
+	case tpe == "string":
+		return fmt.Sprintf("\"%s\"", val)
+	case tpe == "bool":
+		return fmt.Sprintf("%t", val)
+	case tpe == "float64":
+		return fmt.Sprintf("%f", val)
+	}
+	data, _ := json.Marshal(val)
+	return fmt.Sprintf("\"%s\"", data)
 }
 
 func (g *GoGenerator) Objects(prefix string, schema *JsonSchema) string {

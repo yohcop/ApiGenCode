@@ -39,7 +39,8 @@
       "type": "object",
       "properties": {
         "lat": { "type": "number" },
-        "lon": { "type": "number" }
+        "lon": { "type": "number" },
+        "fix": { "$ref": "#/definitions/FixType" }
       }
     },
     "GeoPoint": {
@@ -64,50 +65,9 @@
           "enum": [true, false]
         }
       }
-    }
-  },
-
-  "methods": {
-    "GetGeoPoints": {
-      "path": "/getgeopoints",
-      "description": "Retrieves the geopoints around the given point.",
-      "request": {
-        "type": "object",
-        "properties": {
-          "loc": { "$ref": "Location" },
-          "radius": { "type": "number", "description": "in meters" },
-          "namespace": {
-            "type": "array",
-            "items": { "type": "string" }
-          },
-          "parents": {
-            "type": "array",
-            "items": { "$ref": "GeoPoint" }
-          },
-          "visits": { "type": "integer" },
-          "data": {
-            "enum": [
-              "some string", 123, 45.6, ["foo", 3],
-              {"asd": "fg"}
-            ]
-          },
-          "flags": {
-            "type": "array",
-            "items": {
-              "enum": [ "user_contributed", "reference" ]
-            }
-          }
-        }
-      },
-      "response": {
-        "type": "object",
-        "properties": {
-          "geopoints": {
-            "type": "array",
-            "items": { "$ref": "GeoPoint" }
-          }
-        }
-      }
+    },
+    "FixType": {
+      "enum": [ "GPS", "approximate" ]
     }
   }
 }

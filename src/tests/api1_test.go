@@ -6,7 +6,8 @@ import (
 )
 
 func TestStruct(t *testing.T) {
-	r := &api1.Location{12, 88}
+	ft := api1.FixType(4)
+	r := &api1.Location{12, 88, &ft}
 	t.Log(r)
 }
 
