@@ -163,7 +163,6 @@ func (i *interfaceGenerator) Placeholders(method *JsonLink, parent *JsonSchema) 
 	placeholders := re.FindAllStringSubmatch(method.Href, -1)
 	for _, match := range placeholders {
 		name := match[1]
-		fmt.Println(name)
 		if schema, known := parent.Properties[name]; known {
 			params = append(params, []string{name, i.g.TypeName("", schema)})
 		} else {
