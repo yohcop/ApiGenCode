@@ -81,9 +81,9 @@ func (g *GoGenerator) TypeName(prefix string, schema *JsonSchema) string {
 	case "object":
 		return "*" + prefix + schema.Ref
 	case "array":
-    if schema.Items.Ref != "" {
-		  return g.GoName(prefix+schema.Items.Ref)
-    }
+		if schema.Items.Ref != "" {
+			return g.GoName(prefix + schema.Items.Ref)
+		}
 		return "[]" + g.TypeName(prefix, schema.Items)
 	}
 	if schema.Ref != "" {
@@ -153,8 +153,25 @@ func (i *interfaceGenerator) schema(prefixes []string, in *JsonSchema, parent *J
 }
 
 func (i *interfaceGenerator) link(prefixes []string, link *JsonLink, parent *JsonSchema) *line {
-	f := i.Method(link, parent)
-	return &line{f, f}
+	var req, resp string
+	if link.Schema != nil {
+		req = i.g.TypeName(i.g.GoName(link.Title), link.Schema)
+	}
+	if link.TargetSchema != nil {
+		resp = i.g.TypeName("", link.TargetSchema)
+	}
+	params := make([]string, 0)
+	for _, extraParam := range i.Placeholders(link, parent) {
+		params = append(params, extraParam[0]+" "+extraParam[1])
+	}
+	if len(req) > 0 {
+		params = append(params, "input "+req)
+	}
+	name := i.g.GoName(link.Title)
+	return &line{
+		DedupeKey: name,
+		Line:      fmt.Sprintf("%s(%s) (%s, error)", name, strings.Join(params, ","), resp),
+	}
 }
 
 func (i *interfaceGenerator) Placeholders(method *JsonLink, parent *JsonSchema) [][]string {
@@ -170,25 +187,6 @@ func (i *interfaceGenerator) Placeholders(method *JsonLink, parent *JsonSchema) 
 		}
 	}
 	return params
-}
-
-func (i *interfaceGenerator) Method(method *JsonLink, parent *JsonSchema) string {
-	var req, resp string
-	if method.Schema != nil {
-		req = i.g.TypeName(i.g.GoName(method.Title), method.Schema)
-	}
-	if method.TargetSchema != nil {
-		resp = i.g.TypeName("", method.TargetSchema)
-	}
-	params := make([]string, 0)
-	for _, extraParam := range i.Placeholders(method, parent) {
-		params = append(params, extraParam[0]+" "+extraParam[1])
-	}
-	if len(req) > 0 {
-		params = append(params, "input "+req)
-	}
-	name := i.g.GoName(method.Title)
-	return fmt.Sprintf("%s(%s) (%s, error)", name, strings.Join(params, ","), resp)
 }
 
 func (g *GoGenerator) Interface(api *JsonSchema) string {

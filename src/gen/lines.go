@@ -7,7 +7,7 @@ import (
 
 type line struct {
 	DedupeKey string
-	lines     string
+	Line      string
 }
 
 type lineGenerator interface {
@@ -54,8 +54,8 @@ func GenLines(in *JsonSchema, g lineGenerator) string {
 	}
 
 	list := make([]string, len(filtered))
-	for l := range filtered {
-		list = append(list, l)
+	for _, l := range filtered {
+		list = append(list, l.Line)
 	}
 
 	sort.Strings(list)
