@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 )
@@ -11,35 +12,38 @@ type line struct {
 }
 
 type lineGenerator interface {
-	schema(prefixes []string, in *JsonSchema, parent *JsonLink) *line
-	link(prefixes []string, link *JsonLink, parent *JsonSchema) *line
+	schema(path string, in *JsonSchema, parent *JsonLink) *line
+	link(path string, link *JsonLink, parent *JsonSchema) *line
 }
 
-func genAllLines(prefixes []string, in *JsonSchema, g lineGenerator) []*line {
+func genAllLines(path string, in *JsonSchema, g lineGenerator) []*line {
 	lines := make([]*line, 0)
 
 	for name, schema := range in.Definitions {
-		lines = append(lines, g.schema(append(prefixes, name), schema, nil))
-		for _, m := range genAllLines(append(prefixes, name), schema, g) {
+		p := path + "/definitions/" + name
+		lines = append(lines, g.schema(p, schema, nil))
+		for _, m := range genAllLines(p, schema, g) {
 			lines = append(lines, m)
 		}
 	}
 	for name, schema := range in.Properties {
-		lines = append(lines, g.schema(append(prefixes, name), schema, nil))
-		for _, m := range genAllLines(append(prefixes, name), schema, g) {
+		p := path + "/properties/" + name
+		lines = append(lines, g.schema(p, schema, nil))
+		for _, m := range genAllLines(p, schema, g) {
 			lines = append(lines, m)
 		}
 	}
 
-	for _, link := range in.Links {
-		f := g.link(prefixes, link, in)
+	for i, link := range in.Links {
+		p := fmt.Sprintf("%s/links[%d]", path, i)
+		f := g.link(p, link, in)
 		lines = append(lines, f)
 
 		if link.Schema != nil {
-			lines = append(lines, g.schema(append(prefixes, link.Title), link.Schema, link))
+			lines = append(lines, g.schema(p, link.Schema, link))
 		}
 		if link.TargetSchema != nil {
-			lines = append(lines, g.schema(append(prefixes, link.Title), link.TargetSchema, link))
+			lines = append(lines, g.schema(p, link.TargetSchema, link))
 		}
 	}
 	return lines
@@ -47,7 +51,7 @@ func genAllLines(prefixes []string, in *JsonSchema, g lineGenerator) []*line {
 
 func GenLines(in *JsonSchema, g lineGenerator) string {
 	filtered := make(map[string]*line)
-	for _, l := range genAllLines([]string{}, in, g) {
+	for _, l := range genAllLines("#", in, g) {
 		if l != nil {
 			filtered[l.DedupeKey] = l
 		}

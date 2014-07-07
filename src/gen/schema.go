@@ -3,6 +3,7 @@ package main
 // Structures used to represent the schema.
 type JsonSchema struct {
 	Title       string                 `json:"title,omitempty"`
+	Description string                 `json:"description,omitempty"`
 	Type        string                 `json:"type,omitempty"`
 	Definitions map[string]*JsonSchema `json:"definitions,omitempty"`
 
@@ -23,6 +24,7 @@ type JsonLink struct {
 	Href         string      `json:"href,omitempty"`
 	Rel          string      `json:"rel,omitempty"`
 	Title        string      `json:"title,omitempty"`
+	Description  string      `json:"description,omitempty"`
 	Method       string      `json:"method,omitempty"`
 	EncType      string      `json:"encType,omitempty"`
 	Schema       *JsonSchema `json:"schema,omitempty"`
