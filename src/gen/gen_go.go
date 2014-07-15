@@ -333,11 +333,11 @@ func (i *handlerGenerator) link(path string, link *JsonLink, parent *JsonSchema)
 
 	var args []string
 	for i, p := range params {
-		args = append(args, fmt.Sprintf(`%s := matches[%d]`, p, i))
+		args = append(args, fmt.Sprintf(`%s := matches[0][%d]`, p, i + 1))
 	}
 	var matches = ""
 	if len(args) > 0 {
-		matches = "matches := re.FindAllString(r.URL.Path, -1)"
+		matches = "matches := re.FindAllStringSubmatch(r.URL.Path, -1)"
 	}
 
 	if len(req) > 0 {
