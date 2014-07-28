@@ -157,10 +157,8 @@ func (i *structGenerator) schema(path string, in *JsonSchema, parent *JsonLink) 
 		if in.Ref != "" {
 			name = i.g.GoName(in.Ref)
 		} else {
-			if in.Title == "" {
-				panic("No title in " + path)
-			}
-			name = i.g.GoName(in.Title)
+			panic(fmt.Sprintf("Always use #/definitions/<type_name> so I can "+
+				"infer unique type names (in %s)", path))
 		}
 	}
 
@@ -172,6 +170,11 @@ func (i *structGenerator) schema(path string, in *JsonSchema, parent *JsonLink) 
 		for fieldName, field := range in.Properties {
 			if field.Type == "array" && field.Items.Ref != "" {
 				t := i.g.GoName(field.Items.Ref)
+				content = append(content,
+					fmt.Sprintf("%s []%s `json:\"%s,omitempty\"`",
+						i.g.GoName(fieldName), t, fieldName))
+			} else if field.Type == "array" {
+				t := i.g.GoName(field.Items.Title)
 				content = append(content,
 					fmt.Sprintf("%s []%s `json:\"%s,omitempty\"`",
 						i.g.GoName(fieldName), t, fieldName))
@@ -266,14 +269,16 @@ func (i *interfaceGenerator) link(path string, link *JsonLink, parent *JsonSchem
 		if link.Schema.Ref != "" {
 			req = i.g.TypeName(path+"/schema", true, link.Schema)
 		} else {
-			req = "*" + i.g.GoName(link.Schema.Title)
+			panic(fmt.Sprintf("Always use #/definitions/<type_name> so I can "+
+				"infer unique type names (in %s/schema)", path))
 		}
 	}
 	if link.TargetSchema != nil {
 		if link.TargetSchema.Ref != "" {
 			resp = i.g.TypeName(path+"/targetSchema", true, link.TargetSchema)
 		} else {
-			resp = "*" + i.g.GoName(link.TargetSchema.Title)
+			panic(fmt.Sprintf("Always use #/definitions/<type_name> so I can "+
+				"infer unique type names (in %s/targetSchema)", path))
 		}
 	}
 	params := make([]string, 0)
@@ -333,7 +338,8 @@ func (i *handlerGenerator) link(path string, link *JsonLink, parent *JsonSchema)
 		if link.Schema.Ref != "" {
 			req = i.g.TypeName(path+"/schema", false, link.Schema)
 		} else {
-			req = i.g.GoName(link.Schema.Title)
+			panic(fmt.Sprintf("Always use #/definitions/<type_name> so I can "+
+				"infer unique type names (in %s/schema)", path))
 		}
 	}
 	params := make([]string, 0)
