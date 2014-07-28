@@ -153,34 +153,37 @@ type structGenerator struct {
 
 func (i *structGenerator) schema(path string, in *JsonSchema, parent *JsonLink) *line {
 	name := path
-	// Note: we only do this for the input. it is unlikely that a
-	// custom output would be definede here (i.e., not with $ref)
-	// but it is still possible. May be worth doing the same with
-	// targetSchema.
-	if parent != nil && strings.HasSuffix(path, "/schema") {
-		if parent.Schema.Ref != "" {
-			name = i.g.TypeName(path, true, parent.Schema)
+	if parent != nil {
+		if in.Ref != "" {
+			name = i.g.GoName(in.Ref)
 		} else {
-			name = i.g.GoName(parent.Title) + "Input"
+			if in.Title == "" {
+				panic("No title in " + path)
+			}
+			name = i.g.GoName(in.Title)
 		}
 	}
 
 	doc := genSchemaDoc(in, path)
+	topLevel := regexp.MustCompile("^#/definitions/[^/]+$")
 
 	if in.Type == "object" {
 		content := make([]string, 0, len(in.Properties))
 		for fieldName, field := range in.Properties {
-			t := i.g.TypeName(path+"/"+fieldName, true, field)
-			content = append(content,
-				fmt.Sprintf("%s %s `json:\"%s,omitempty\"`",
-					i.g.GoName(fieldName), t, fieldName))
+			if field.Type == "array" && field.Items.Ref != "" {
+				t := i.g.GoName(field.Items.Ref)
+				content = append(content,
+					fmt.Sprintf("%s []%s `json:\"%s,omitempty\"`",
+						i.g.GoName(fieldName), t, fieldName))
+			} else {
+				t := i.g.TypeName(path+"/"+fieldName, true, field)
+				content = append(content,
+					fmt.Sprintf("%s %s `json:\"%s,omitempty\"`",
+						i.g.GoName(fieldName), t, fieldName))
+			}
 		}
 		l := fmt.Sprintf("%stype %s struct {\n  %s\n}",
 			doc, i.g.GoName(name), strings.Join(content, "\n  "))
-		return &line{path, l}
-	} else if in.Type == "array" {
-		l := fmt.Sprintf("%stype %s []%s\n", doc,
-			i.g.GoName(name), i.g.TypeName(path, true, in.Items))
 		return &line{path, l}
 	} else if len(in.Enum) > 0 {
 		l := i.g.GoName(name)
@@ -197,6 +200,15 @@ func (i *structGenerator) schema(path string, in *JsonSchema, parent *JsonLink) 
         const (
           %s
         )`, doc, l, enumType, strings.Join(values, "\n"))}
+	}
+	// Generate top-level aliases as well.
+	if topLevel.MatchString(path) {
+		t := i.g.TypeName(path, true, in)
+		if in.Type == "array" {
+			t = "[]" + t
+		}
+		l := fmt.Sprintf("%stype %s %s\n", doc, i.g.GoName(name), t)
+		return &line{path, l}
 	}
 	return nil
 }
@@ -254,14 +266,14 @@ func (i *interfaceGenerator) link(path string, link *JsonLink, parent *JsonSchem
 		if link.Schema.Ref != "" {
 			req = i.g.TypeName(path+"/schema", true, link.Schema)
 		} else {
-			req = "*" + name + "Input"
+			req = "*" + i.g.GoName(link.Schema.Title)
 		}
 	}
 	if link.TargetSchema != nil {
 		if link.TargetSchema.Ref != "" {
 			resp = i.g.TypeName(path+"/targetSchema", true, link.TargetSchema)
 		} else {
-			resp = name + "Output"
+			resp = "*" + i.g.GoName(link.TargetSchema.Title)
 		}
 	}
 	params := make([]string, 0)
@@ -321,7 +333,7 @@ func (i *handlerGenerator) link(path string, link *JsonLink, parent *JsonSchema)
 		if link.Schema.Ref != "" {
 			req = i.g.TypeName(path+"/schema", false, link.Schema)
 		} else {
-			req = name + "Input"
+			req = i.g.GoName(link.Schema.Title)
 		}
 	}
 	params := make([]string, 0)
@@ -333,7 +345,7 @@ func (i *handlerGenerator) link(path string, link *JsonLink, parent *JsonSchema)
 
 	var args []string
 	for i, p := range params {
-		args = append(args, fmt.Sprintf(`%s := matches[0][%d]`, p, i + 1))
+		args = append(args, fmt.Sprintf(`%s := matches[0][%d]`, p, i+1))
 	}
 	var matches = ""
 	if len(args) > 0 {
