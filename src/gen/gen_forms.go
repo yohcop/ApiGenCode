@@ -83,9 +83,9 @@ func (g *HtmlFormGenerator) GenIndex(api *JsonSchema) string {
 	functions := make([]string, 0)
 	for name, def := range api.Definitions {
 		for _, link := range def.Links {
-		  f := g.GenMethodLink(name, link)
-		  functions = append(functions, f)
-    }
+			f := g.GenMethodLink(name, link)
+			functions = append(functions, f)
+		}
 	}
 	return "<ul>" + strings.Join(functions, "\n  ") + "</ul>"
 }

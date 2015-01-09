@@ -55,7 +55,13 @@
           "type": "integer",
           "enum": [1, 2, 5]
         },
-        "floatTypeId": {
+        "string_array": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "float_type": {
           "type": "array",
           "items": {
             "enum": [1.2, 2, 5]

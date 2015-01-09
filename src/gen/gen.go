@@ -12,9 +12,9 @@ import (
 
 var jsonFile = flag.String("schema", "", "Path to json schema")
 var lang = flag.String("lang", "go",
-    `Language to generate code for. ["go", "html"]`)
+	`Language to generate code for. ["go", "html"]`)
 var outDir = flag.String("out", "",
-    "Output directory. If emtpy, prints to stdout")
+	"Output directory. If emtpy, prints to stdout")
 var showParsed = flag.Bool("show_parsed", false,
 	"Prints what was parsed from the schema file.")
 

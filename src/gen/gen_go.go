@@ -131,7 +131,10 @@ func (g *GoGenerator) TypeName(path string, ptr bool, schema *JsonSchema) string
 		}
 		return g.GoName(path)
 	case "array":
-		return g.GoName(path)
+		if schema.Ref != "" {
+			return g.GoName(path)
+		}
+		return "[]" + g.TypeName(path, ptr, schema.Items)
 	}
 	if schema.Ref != "" {
 		if ptr {
@@ -173,7 +176,7 @@ func (i *structGenerator) schema(path string, in *JsonSchema, parent *JsonLink) 
 				content = append(content,
 					fmt.Sprintf("%s []%s `json:\"%s,omitempty\"`",
 						i.g.GoName(fieldName), t, fieldName))
-			} else if field.Type == "array" {
+			} else if field.Type == "array" && field.Items.Title != "" {
 				t := i.g.GoName(field.Items.Title)
 				content = append(content,
 					fmt.Sprintf("%s []%s `json:\"%s,omitempty\"`",
@@ -440,6 +443,8 @@ func (g *GoGenerator) Handler(api *JsonSchema) string {
       "encoding/json"
       "io/ioutil"
     )
+
+    var _ = ioutil.ReadAll  // Some generated code may need ioutil.
 
     type %s struct {
       Api %s
