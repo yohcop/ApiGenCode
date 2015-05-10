@@ -390,7 +390,7 @@ func (i *handlerGenerator) link(path string, link *JsonLink, parent *JsonSchema)
         return false, nil
       }`,
 			genLinkDoc(link, key), i.class, name,
-			re.ReplaceAllString(link.Href, "([^/]+)"),
+			re.ReplaceAllString(link.Href, "([^/]*)"),
 			methodOrGet(link),
 			matches,
 			strings.Join(args, "\n"),
