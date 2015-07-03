@@ -33,6 +33,10 @@ func methodOrGet(link *JsonLink) string {
 	return "GET"
 }
 
+func clearNL(s string) string {
+  return strings.Replace(s, "\n", "", -1)
+}
+
 func genLinkDoc(link *JsonLink, key string) string {
 	doc := ""
 	if link.Title != "" || link.Description != "" {
@@ -42,7 +46,7 @@ func genLinkDoc(link *JsonLink, key string) string {
 		doc += "// " + link.Title + "\n"
 	}
 	if link.Description != "" {
-		doc += "// " + link.Description + "\n"
+		doc += "// " + clearNL(link.Description) + "\n"
 	}
 	if *genGoDbg {
 		doc += "// (ApiGenCode: key=" + key + ")\n"
