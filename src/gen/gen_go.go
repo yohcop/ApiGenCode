@@ -63,7 +63,7 @@ func genSchemaDoc(schema *JsonSchema, key string) string {
 		doc += "// " + schema.Title + "\n"
 	}
 	if schema.Description != "" {
-		doc += "// " + schema.Description + "\n"
+		doc += "// " + clearNL(schema.Description) + "\n"
 	}
 	if *genGoDbg {
 		doc += "// (ApiGenCode: key=" + key + ")\n"
